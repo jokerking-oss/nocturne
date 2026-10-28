@@ -21,15 +21,15 @@ concurrency:
 
 jobs:
   test:
-    name: Kernel tests
+    name: Kernel + wiring tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify kernel invariants
-        run: node --test test/kernel.test.js
+      - name: Verify kernel invariants and build contracts
+        run: node --test test/kernel.test.js test/wiring.test.js
 
   build:
     name: Build bundle
@@ -42,6 +42,20 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
+      - name: Prefetch embedding weights
+        # 权重不进 git（23 MB 二进制），构建时取一份随产物发布，
+        # 这样 Pages 上的站点完全不依赖外部网络。
+        run: |
+          set -euo pipefail
+          BASE="https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main"
+          DEST="public/models/Xenova/all-MiniLM-L6-v2"
+          mkdir -p "$DEST/onnx"
+          for f in config.json tokenizer.json tokenizer_config.json; do
+            curl -fsSL --retry 3 --max-time 120 -o "$DEST/$f" "$BASE/$f"
+          done
+          curl -fsSL --retry 3 --max-time 300 \
+            -o "$DEST/onnx/model_quantized.onnx" "$BASE/onnx/model_quantized.onnx"
+          ls -lh "$DEST" "$DEST/onnx"
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
