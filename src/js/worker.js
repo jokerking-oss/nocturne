@@ -97,7 +97,13 @@ async function loadEmbedder(modelName, quantized = true) {
       self.postMessage({ type: 'source', host: src.label, index: i, total: sources.length });
       env.allowLocalModels = src.local;
       env.allowRemoteModels = !src.local;
-      if (!src.local) env.remoteHost = src.host;
+      if (src.local) {
+        // transformers.js 默认 localModelPath 是 '/models/'，写死在域名根；
+        // 子路径部署时必须显式指到 <publicPath>models/。
+        env.localModelPath = localPrefix;
+      } else {
+        env.remoteHost = src.host;
+      }
 
       tokenizer = await AutoTokenizer.from_pretrained(modelName);
       embedder = await pipeline('feature-extraction', modelName, {
@@ -187,6 +193,7 @@ self.onmessage = async (event) => {
         // 主线程带过来的部署前缀（GitHub Pages 项目站点是 /<repo>/）
         if (msg.local_base) {
           const b = String(msg.local_base);
+          // transformers.js 会拼 <localModelPath><model_id>/...，结尾必须带斜杠
           localPrefix = (b.endsWith('/') ? b : b + '/') + 'models/';
         }
         await loadEmbedder(msg.model_name, msg.quantized !== false);

@@ -80,6 +80,14 @@ test('worker 支持全链路消息：load / embedBatch / query / setQuery / tsne
   }
 });
 
+test('worker 本地模式必须设置 localModelPath（子路径部署回归防线）', () => {
+  // transformers.js 的 localModelPath 默认写死 '/models/'，位于域名根；
+  // 项目站点挂在 /nocturne/ 下时，必须显式指到 <publicPath>models/，
+  // 否则本地权重永远拉不到，只能退回远端。
+  assert.match(workerSrc, /env\.localModelPath/, '应显式设置 localModelPath');
+  assert.match(workerSrc, /localModelPath\s*=\s*localPrefix/, 'localModelPath 应指向计算出的前缀');
+});
+
 test('worker 模型加载用本地优先 + 远端兜底的三级策略', () => {
   assert.match(workerSrc, /localPrefix/, '应有本地前缀');
   assert.match(workerSrc, /env\.allowLocalModels/, '应可切换本地/远端');
