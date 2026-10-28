@@ -63,8 +63,32 @@ npm start          # http://localhost:8080
 
 ```bash
 npm run build      # 输出到 dist/
-npm test           # Node 测试：内核 / 接线 / 构建契约
+npm test           # 内核 / 接线 / 构建三层契约，50 项
+npm run verify     # 端到端：真的装载模型、真的算向量、真的降维
 ```
+
+`npm run verify` 会打印每一步的真实数字，比如：
+
+```
+[1/5] 装载模型 Xenova/all-MiniLM-L6-v2 … 就绪 (134 ms)
+[2/5] 12 个语义块，维度 384
+[3/5] 相似度范围 0.7274 … 0.8410
+[4/5] Barnes-Hut t-SNE 降维完成 (57 ms)
+[5/5] 引线 14 条 · 星点 12 颗
+E2E PASSED
+```
+
+它不是 mock：模型是下下来的真权重，坐标是 t-SNE 真算出来的。
+
+### 部署到子路径
+
+GitHub Pages 的项目站点挂在 `/<repo>/` 下，资源根路径必须跟着走：
+
+```bash
+NOCTURNE_PUBLIC_PATH=/nocturne/ npm run build
+```
+
+不设置时默认 `/`（适合根域部署）。
 
 ## 面板
 

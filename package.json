@@ -16,11 +16,12 @@
   ],
   "author": "jokerking-oss",
   "license": "MIT",
-  "main": "src/js/index.js",
+  "homepage": "https://jokerking-oss.github.io/nocturne/",
   "scripts": {
     "start": "webpack serve --mode development --port 8080",
     "build": "webpack --mode production",
     "test": "node --test test/kernel.test.js test/wiring.test.js test/build.test.js",
+    "verify": "node scripts/verify-e2e.mjs",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {
