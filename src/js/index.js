@@ -594,6 +594,9 @@ function bootEngine() {
       type: 'load',
       model_name: sel.value || 'Xenova/all-MiniLM-L6-v2',
       quantized: true,
+      // worker 是独立 chunk，拿不到 entry 的 publicPath；
+      // 站点部署在子路径时（GitHub Pages 项目站），本地权重必须带前缀才对。
+      local_base: __webpack_public_path__, // eslint-disable-line no-undef
     });
   } catch (err) {
     // 装载失败必须让用户看见原因，而不是留一块死黑幕布。

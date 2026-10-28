@@ -7,6 +7,22 @@ import CopyWebpackPlugin from 'copy-webpack-plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * 资源根路径。
+ *
+ * 必须是绝对路径且以 / 结尾：worker chunk 里的 importScripts() 相对 worker
+ * 自身位置解析，用相对 publicPath 会拼成 /assets/assets/... 直接 404。
+ *
+ * 但 GitHub Pages 的项目站点挂在 /<repo>/ 子路径下，根路径 / 会解析到域名根，
+ * 线上就是一片 404。所以 CI 里用 NOCTURNE_PUBLIC_PATH=/nocturne/ 覆盖，
+ * 本地与根域部署保持默认。
+ */
+const publicPath = (() => {
+  const raw = process.env.NOCTURNE_PUBLIC_PATH || '/';
+  if (raw === './' || raw === '') return '/';
+  return raw.endsWith('/') ? raw : raw + '/';
+})();
+
 export default (_env, argv) => {
   const isProd = argv.mode === 'production';
 
@@ -17,9 +33,7 @@ export default (_env, argv) => {
       filename: isProd ? 'assets/[name].[contenthash:8].js' : 'assets/[name].js',
       chunkFilename: isProd ? 'assets/[name].[contenthash:8].js' : 'assets/[name].js',
       clean: true,
-      // 必须是绝对根路径：worker chunk 里的 importScripts() 相对 worker 自身位置
-      // 解析，用相对 publicPath 会拼成 /assets/assets/... 直接 404。
-      publicPath: '/',
+      publicPath,
     },
     resolve: {
       extensions: ['.js', '.json'],

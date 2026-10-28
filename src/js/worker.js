@@ -17,8 +17,12 @@ import init, { tSNE } from 'wasm-bhtsne';
  *
  * 之所以要本地优先：企业网络、离线演示、录屏这些场景下外网根本不通，
  * 而"模型装不上"在界面上表现为一块死幕布，用户无从判断是网络问题还是产品坏了。
+ *
+ * 本地前缀由主线程随 load 消息传进来：worker 是独立 chunk，拿不到
+ * entry 的 __webpack_public_path__，而 GitHub Pages 项目站点挂在 /<repo>/ 下，
+ * 写死 'models/' 会在线上 404。
  */
-const LOCAL_PREFIX = 'models/';
+let localPrefix = 'models/';
 const MODEL_HOSTS = ['https://huggingface.co', 'https://hf-mirror.com'];
 
 env.useBrowserCache = true;
@@ -82,7 +86,7 @@ async function loadEmbedder(modelName, quantized = true) {
    * 每一项是 { label, host, local }。
    */
   const sources = [
-    { label: LOCAL_PREFIX + modelName, host: null, local: true },
+    { label: localPrefix + modelName, host: null, local: true },
     ...MODEL_HOSTS.map((h) => ({ label: h, host: h, local: false })),
   ];
 
@@ -180,13 +184,19 @@ self.onmessage = async (event) => {
   switch (msg.type) {
     case 'load': {
       try {
+        // 主线程带过来的部署前缀（GitHub Pages 项目站点是 /<repo>/）
+        if (msg.local_base) {
+          const b = String(msg.local_base);
+          localPrefix = (b.endsWith('/') ? b : b + '/') + 'models/';
+        }
         await loadEmbedder(msg.model_name, msg.quantized !== false);
         self.postMessage({ type: 'ready', model: modelId });
       } catch (e) {
         self.postMessage({ type: 'error', stage: 'load', message: String(e && e.message || e) });
       }
       break;
-    }    case 'embedBatch': {
+    }
+    case 'embedBatch': {
       try {
         const texts = msg.texts || [];
         const total = texts.length;

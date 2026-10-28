@@ -81,14 +81,13 @@ test('worker 支持全链路消息：load / embedBatch / query / setQuery / tsne
 });
 
 test('worker 模型加载用本地优先 + 远端兜底的三级策略', () => {
-  assert.match(workerSrc, /LOCAL_PREFIX/, '应有本地前缀');
+  assert.match(workerSrc, /localPrefix/, '应有本地前缀');
   assert.match(workerSrc, /env\.allowLocalModels/, '应可切换本地/远端');
   assert.match(workerSrc, /env\.allowRemoteModels/, '应可切换远端开关');
   assert.match(workerSrc, /env\.remoteHost/, '必须显式设置 remoteHost');
-  // 本地源必须排在远端源之前
-  const localIdx = workerSrc.indexOf('local: true');
-  const remoteIdx = workerSrc.indexOf('local: false');
-  assert.ok(localIdx > 0 && remoteIdx > localIdx, '本地源应排在远端源之前');
+  const localSrc = workerSrc.indexOf('local: true');
+  const remoteSrc = workerSrc.indexOf('local: false');
+  assert.ok(localSrc > 0 && remoteSrc > localSrc, '本地源应排在远端源之前');
 });
 
 test('worker 在首个模型源不可达时自动切下一个（优雅降级）', () => {

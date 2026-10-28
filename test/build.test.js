@@ -18,10 +18,32 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
 const cfgSrc = readFileSync(path.join(root, 'webpack.config.js'), 'utf8');
 
-test('webpack publicPath 必须是绝对根路径（worker importScripts 回归防线）', () => {
-  const m = cfgSrc.match(/publicPath:\s*['"]([^'"]*)['"]/);
-  assert.ok(m, 'webpack.config.js 未显式声明 publicPath');
-  assert.equal(m[1], '/', `publicPath 必须是 '/'，实测为 '${m[1]}'`);
+test('webpack publicPath 默认是绝对根路径（worker importScripts 回归防线）', () => {
+  assert.match(cfgSrc, /publicPath,/, 'output.publicPath 应使用计算出的变量');
+  // 默认值（无环境变量时）必须是 '/'
+  assert.match(
+    cfgSrc,
+    /NOCTURNE_PUBLIC_PATH\s*\|\|\s*['"]\/['"]/,
+    '默认 publicPath 必须是 "/"'
+  );
+});
+
+test('publicPath 可用 NOCTURNE_PUBLIC_PATH 覆盖（GitHub Pages 子路径回归防线）', () => {
+  // 回归：写死 '/' 时，项目站点挂在 /nocturne/ 下，
+  // HTML 引用的 /assets/*.js 会解析到域名根 -> 线上白屏 404。
+  assert.match(cfgSrc, /NOCTURNE_PUBLIC_PATH/, '应支持用环境变量覆盖 publicPath');
+  // 必须补齐尾部斜杠，否则拼出 /nocturneassets/...
+  assert.match(cfgSrc, /endsWith\(['"]\/['"]\)/, '应规范化结尾斜杠');
+});
+
+test('worker 的本地模型前缀由主线程传入，不写死', () => {
+  // worker 是独立 chunk，拿不到 entry 的 publicPath，
+  // 写死 'models/' 会在子路径部署时 404。
+  const workerSrc = readFileSync(path.join(root, 'src/js/worker.js'), 'utf8');
+  const indexSrc = readFileSync(path.join(root, 'src/js/index.js'), 'utf8');
+  assert.match(workerSrc, /localPrefix/, 'worker 应用可变的 localPrefix');
+  assert.match(workerSrc, /msg\.local_base/, 'worker 应接收主线程传来的前缀');
+  assert.match(indexSrc, /local_base/, '主线程应在 load 消息里带上前缀');
 });
 
 test('webpack 开启 asyncWebAssembly（wasm-bhtsne 需要它）', () => {

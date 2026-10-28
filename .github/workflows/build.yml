@@ -57,6 +57,9 @@ jobs:
             -o "$DEST/onnx/model_quantized.onnx" "$BASE/onnx/model_quantized.onnx"
           ls -lh "$DEST" "$DEST/onnx"
       - run: npm run build
+        env:
+          # 项目站点挂在 /<repo>/ 下，资源根路径必须带前缀，否则线上 404 白屏
+          NOCTURNE_PUBLIC_PATH: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
