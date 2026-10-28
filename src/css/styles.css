@@ -1,0 +1,669 @@
+/* NOCTURNE — 视觉谱。
+   枯墨底、暖月白。没有圆角，没有阴影抬升，没有 SaaS 紫蓝。
+   参考系：铅字古籍 + 天文台星图 + 老式仪表。
+*/
+
+:root {
+  --ink-000: #07070a;
+  --ink-050: #0b0b10;
+  --ink-100: #101018;
+  --ink-200: #17171f;
+  --ink-300: #20202b;
+  --ink-400: #2c2c39;
+  --rule: #26262f;
+  --rule-soft: #1b1b23;
+
+  --bone: #e8e2d4;
+  --bone-dim: #a9a396;
+  --bone-faint: #6d6a62;
+
+  --ember: #d98a4a;
+  --ember-hot: #f0b070;
+  --moon: #cfd8e3;
+  --indigo: #4a5875;
+  --verdigris: #6f8f80;
+
+  --serif: "Songti SC", "Source Han Serif SC", "Noto Serif SC", "STSong", Georgia, "Times New Roman", serif;
+  --mono: "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --ease: cubic-bezier(0.16, 0.84, 0.28, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--ink-000);
+  color: var(--bone);
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.01em;
+}
+
+/* 全局颗粒：让整块屏幕有纸的呼吸 */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9000;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+::selection {
+  background: rgba(217, 138, 74, 0.28);
+  color: var(--bone);
+}
+
+/* ---------- 星帆布 ---------- */
+
+#sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  cursor: crosshair;
+}
+
+#sky.grabbing {
+  cursor: grabbing;
+}
+
+/* ---------- 边框 / 角标 ---------- */
+
+.frame {
+  position: fixed;
+  inset: 18px;
+  border: 1px solid var(--rule-soft);
+  pointer-events: none;
+  z-index: 100;
+}
+
+.frame::before,
+.frame::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--bone-faint);
+}
+
+.frame::before {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.frame::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+}
+
+/* ---------- 抬头 ---------- */
+
+.masthead {
+  position: fixed;
+  top: 40px;
+  left: 44px;
+  z-index: 300;
+  pointer-events: none;
+  mix-blend-mode: normal;
+}
+
+.masthead h1 {
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 400;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  color: var(--bone);
+  line-height: 1.2;
+}
+
+.masthead .sub {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--bone-faint);
+  margin-top: 8px;
+}
+
+.masthead .rule {
+  width: 46px;
+  height: 1px;
+  background: var(--ember);
+  margin-top: 11px;
+  opacity: 0.65;
+}
+
+/* ---------- 左栏铭牌 ---------- */
+
+.colophon {
+  position: fixed;
+  bottom: 40px;
+  left: 44px;
+  z-index: 300;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--bone-faint);
+  line-height: 2.1;
+  pointer-events: none;
+  max-width: 270px;
+}
+
+.colophon b {
+  color: var(--bone-dim);
+  font-weight: 400;
+}
+
+/* ---------- 右栏仪表 ---------- */
+
+.gauge {
+  position: fixed;
+  top: 40px;
+  right: 44px;
+  z-index: 300;
+  width: 232px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  color: var(--bone-faint);
+  pointer-events: none;
+}
+
+.gauge .read {
+  color: var(--bone-dim);
+}
+
+.gauge .big {
+  font-family: var(--serif);
+  font-size: 30px;
+  letter-spacing: 0.02em;
+  color: var(--ember-hot);
+  line-height: 1.15;
+  margin: 2px 0 8px;
+}
+
+.gauge .rowline {
+  height: 1px;
+  background: var(--rule);
+  margin: 9px 0;
+}
+
+/* ---------- 面板 ---------- */
+
+.panel-stack {
+  position: fixed;
+  right: 44px;
+  bottom: 40px;
+  z-index: 400;
+  width: 336px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: calc(100vh - 220px);
+}
+
+.panel {
+  border: 1px solid var(--rule);
+  background: rgba(11, 11, 16, 0.9);
+  backdrop-filter: blur(14px) saturate(120%);
+}
+
+.panel + .panel {
+  border-top: none;
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 13px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.35s var(--ease);
+}
+
+.panel__head:hover {
+  background: rgba(255, 255, 255, 0.028);
+}
+
+.panel__title {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+}
+
+.panel__head.is-open .panel__title {
+  color: var(--bone);
+}
+
+.panel__sigil {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--bone-faint);
+  transition: transform 0.4s var(--ease), color 0.3s var(--ease);
+  line-height: 1;
+}
+
+.panel__head.is-open .panel__sigil {
+  transform: rotate(45deg);
+  color: var(--ember);
+}
+
+.panel__body {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.52s var(--ease), opacity 0.36s var(--ease);
+  opacity: 0;
+}
+
+.panel.is-open .panel__body {
+  max-height: 62vh;
+  opacity: 1;
+  overflow-y: auto;
+}
+
+.panel__inner {
+  padding: 4px 13px 15px;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.panel__inner::-webkit-scrollbar {
+  width: 3px;
+}
+
+.panel__inner::-webkit-scrollbar-thumb {
+  background: var(--ink-400);
+}
+
+/* ---------- 表单 ---------- */
+
+label.field {
+  display: block;
+  margin-top: 13px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bone-faint);
+}
+
+textarea,
+input[type="text"],
+select {
+  width: 100%;
+  margin-top: 6px;
+  background: var(--ink-050);
+  border: 1px solid var(--rule);
+  color: var(--bone);
+  font-family: var(--serif);
+  font-size: 13.5px;
+  line-height: 1.75;
+  padding: 10px 11px;
+  outline: none;
+  transition: border-color 0.3s var(--ease), background 0.3s var(--ease);
+  border-radius: 0;
+}
+
+textarea {
+  min-height: 148px;
+  resize: vertical;
+}
+
+select {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+textarea:focus,
+input[type="text"]:focus,
+select:focus {
+  border-color: var(--ember);
+  background: var(--ink-100);
+}
+
+textarea::placeholder {
+  color: var(--bone-faint);
+  font-style: italic;
+}
+
+/* 滑杆：一根横过黑暗的线 */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  margin-top: 4px;
+  cursor: ew-resize;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 1px;
+  background: var(--ink-400);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 9px;
+  height: 9px;
+  margin-top: -4px;
+  background: var(--ember);
+  border: none;
+  cursor: ew-resize;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 1px;
+  background: var(--ink-400);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 9px;
+  height: 9px;
+  border: none;
+  background: var(--ember);
+}
+
+.checkline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--bone-dim);
+  cursor: pointer;
+}
+
+.checkline input {
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--ink-400);
+  background: var(--ink-050);
+  cursor: pointer;
+  transition: background 0.25s var(--ease), border-color 0.25s var(--ease);
+}
+
+.checkline input:checked {
+  background: var(--ember);
+  border-color: var(--ember);
+}
+
+/* ---------- 按钮：方、硬、纸边 ---------- */
+
+.btn-row {
+  display: flex;
+  gap: 0;
+  margin-top: 15px;
+}
+
+button {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--bone-dim);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  padding: 11px 8px;
+  cursor: pointer;
+  transition: color 0.3s var(--ease), border-color 0.3s var(--ease), background 0.3s var(--ease);
+}
+
+button + button {
+  border-left: none;
+}
+
+button:hover:not(:disabled) {
+  color: var(--bone);
+  border-color: var(--bone-faint);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+button:active:not(:disabled) {
+  background: rgba(217, 138, 74, 0.1);
+}
+
+button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+button.primary {
+  color: var(--ember-hot);
+  border-color: rgba(217, 138, 74, 0.42);
+}
+
+button.primary:hover:not(:disabled) {
+  background: rgba(217, 138, 74, 0.13);
+  color: var(--ember-hot);
+  border-color: var(--ember);
+}
+
+/* ---------- 读数 ---------- */
+
+dl.readout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  margin-top: 12px;
+}
+
+dl.readout dt {
+  color: var(--bone-faint);
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+
+dl.readout dd {
+  color: var(--bone-dim);
+  text-align: right;
+  word-break: break-all;
+}
+
+/* ---------- 星言卡：悬停时被点亮的那一句 ---------- */
+
+.whisper {
+  position: fixed;
+  z-index: 350;
+  max-width: 310px;
+  padding: 13px 15px;
+  background: rgba(7, 7, 10, 0.95);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--ember);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 0.26s var(--ease), transform 0.26s var(--ease);
+}
+
+.whisper.is-on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.whisper .q {
+  font-family: var(--serif);
+  font-size: 14px;
+  line-height: 1.72;
+  color: var(--bone);
+}
+
+.whisper .m {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ember);
+  margin-top: 9px;
+}
+
+/* ---------- 幕布：加载 / 报错 ---------- */
+
+.curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  background: var(--ink-000);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  transition: opacity 0.8s var(--ease), visibility 0.8s var(--ease);
+}
+
+.curtain.is-gone {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.curtain .glyph {
+  font-family: var(--serif);
+  font-size: 30px;
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  color: var(--bone-dim);
+}
+
+.curtain .status {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--bone-faint);
+  text-transform: uppercase;
+  min-height: 1.2em;
+}
+
+.curtain .bar {
+  width: 208px;
+  height: 1px;
+  background: var(--ink-300);
+  position: relative;
+  overflow: hidden;
+}
+
+.curtain .bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  background: var(--ember);
+  transition: width 0.4s var(--ease);
+}
+
+.curtain.has-error .glyph {
+  color: #c8564e;
+}
+
+.curtain .detail {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--bone-faint);
+  max-width: 460px;
+  text-align: center;
+  line-height: 1.8;
+  padding: 0 24px;
+  opacity: 0;
+}
+
+.curtain.has-error .detail {
+  opacity: 1;
+}
+
+/* ---------- 提示 ---------- */
+
+.notice {
+  position: fixed;
+  left: 50%;
+  bottom: 46px;
+  transform: translate(-50%, 12px);
+  z-index: 7000;
+  padding: 10px 18px;
+  background: rgba(7, 7, 10, 0.94);
+  border: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--bone-dim);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s var(--ease), transform 0.35s var(--ease);
+}
+
+.notice.is-on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ---------- 底部键位条 ---------- */
+
+.keyline {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #4a4844;
+  pointer-events: none;
+  display: flex;
+  gap: 20px;
+}
+
+.keyline kbd {
+  font-family: inherit;
+  border: 1px solid var(--rule);
+  padding: 1px 5px;
+  color: var(--bone-faint);
+}
+
+@media (max-width: 900px) {
+  .colophon,
+  .gauge,
+  .keyline {
+    display: none;
+  }
+
+  .panel-stack {
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    width: auto;
+  }
+}

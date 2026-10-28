@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>NOCTURNE / 夜曲 — 让文本坍缩成星图</title>
+  <meta name="description" content="NOCTURNE 把任意文本放进本地嵌入模型，用 Barnes-Hut t-SNE 画成一张可以点亮、可以倾听的星图。全部在你的浏览器里完成，没有服务器。" />
+  <meta name="author" content="jokerking-oss" />
+  <meta name="theme-color" content="#07070a" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="NOCTURNE / 夜曲" />
+  <meta property="og:description" content="一段文本是一群星。语义相近的句子会互相靠近。全部在你本机完成。" />
+</head>
+<body>
+  <div class="frame" aria-hidden="true"></div>
+
+  <canvas id="sky"></canvas>
+
+  <header class="masthead">
+    <h1>夜曲</h1>
+    <div class="sub">Nocturne &nbsp;/&nbsp; Semantics as Constellation</div>
+    <div class="rule"></div>
+  </header>
+
+  <aside class="colophon">
+    <div><b>本地推理</b> · 文本永不离开这台机器</div>
+    <div><b>降维</b> · Barnes-Hut t-SNE / WASM</div>
+    <div><b>引擎</b> · <span id="col-model">尚未装载</span></div>
+  </aside>
+
+  <section class="gauge">
+    <div class="read">STARS PLOTTED</div>
+    <div class="big" id="g-stars">—</div>
+    <div class="rowline"></div>
+    <div class="read">EMBEDDING DIM</div>
+    <div class="big" id="g-dim">—</div>
+    <div class="rowline"></div>
+    <div class="read">LAST PASS</div>
+    <div class="big" id="g-time">—</div>
+  </section>
+
+  <div class="panel-stack">
+    <div class="panel" data-panel="text">
+      <div class="panel__head is-open">
+        <span class="panel__title">I &nbsp;Text</span>
+        <span class="panel__sigil">+</span>
+      </div>
+      <div class="panel__body">
+        <div class="panel__inner">
+          <textarea id="source" spellcheck="false" placeholder="把一段文字放到这里。可以是一首诗、一封旧信、一份合同、一整章小说。
+
+夜色降临的时候，句子开始互相寻找。语义相近的会越靠越近，直到聚成一团光。"></textarea>
+          <div class="btn-row">
+            <button id="btn-weave" class="primary">Observe</button>
+            <button id="btn-clear">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" data-panel="query">
+      <div class="panel__head">
+        <span class="panel__title">II &nbsp;Seed</span>
+        <span class="panel__sigil">+</span>
+      </div>
+      <div class="panel__body">
+        <div class="panel__inner">
+          <label class="field">一句话作为引力源</label>
+          <input type="text" id="query" placeholder="你想寻找什么？留空则用全文重心。" />
+          <div class="btn-row">
+            <button id="btn-query" class="primary">Collapse</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" data-panel="engine">
+      <div class="panel__head">
+        <span class="panel__title">III &nbsp;Engine</span>
+        <span class="panel__sigil">+</span>
+      </div>
+      <div class="panel__body">
+        <div class="panel__inner">
+          <label class="field">嵌入模型</label>
+          <select id="model">
+            <option value="Xenova/all-MiniLM-L6-v2" selected>all-MiniLM-L6 · 23 MB · 384 d</option>
+            <option value="Xenova/gte-tiny">gte-tiny · 25 MB · 384 d</option>
+            <option value="Xenova/bge-small-zh-v1.5">bge-small-zh · 45 MB · 512 d · 中文</option>
+            <option value="Xenova/paraphrase-multilingual-MiniLM-L12-v2">multilingual-MiniLM · 118 MB · 384 d · 多语</option>
+          </select>
+          <label class="field">量化（更省内存，稍损精度）</label>
+          <label class="checkline">
+            <input type="checkbox" id="quantized" checked />
+            <span>Quantized ONNX</span>
+          </label>
+          <div class="btn-row">
+            <button id="btn-load" class="primary">Load Engine</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" data-panel="constellation">
+      <div class="panel__head">
+        <span class="panel__title">IV &nbsp;Legend</span>
+        <span class="panel__sigil">+</span>
+      </div>
+      <div class="panel__body">
+        <div class="panel__inner">
+          <label class="field">相似度门槛 · <span id="v-threshold">-1.00</span></label>
+          <input type="range" id="threshold" min="-100" max="100" value="-100" />
+          <label class="field">t-SNE 迭代 · <span id="v-iters">500</span></label>
+          <input type="range" id="iters" min="100" max="1500" step="100" value="500" />
+          <label class="field">随机种子 · <span id="v-seed">1</span></label>
+          <input type="range" id="seed" min="1" max="999" value="1" />
+          <label class="checkline">
+            <input type="checkbox" id="links" checked />
+            <span>星座引线</span>
+          </label>
+          <label class="checkline">
+            <input type="checkbox" id="labels" />
+            <span>标出星名</span>
+          </label>
+          <label class="checkline">
+            <input type="checkbox" id="grain" checked />
+            <span>颗粒层</span>
+          </label>
+          <div class="btn-row">
+            <button id="btn-relayout">Re-observe</button>
+            <button id="btn-export">Export .json</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" data-panel="lore">
+      <div class="panel__head">
+        <span class="panel__title">V &nbsp;Lore</span>
+        <span class="panel__sigil">+</span>
+      </div>
+      <div class="panel__body">
+        <div class="panel__inner">
+          <dl class="readout">
+            <dt>Model</dt><dd id="r-model">—</dd>
+            <dt>Chunks</dt><dd id="r-chunks">—</dd>
+            <dt>Dim</dt><dd id="r-dim">—</dd>
+            <dt>Tokens</dt><dd id="r-tokens">—</dd>
+            <dt>Links</dt><dd id="r-links">—</dd>
+            <dt>Pass</dt><dd id="r-time">—</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="whisper" id="whisper">
+    <div class="q"></div>
+    <div class="m"></div>
+  </div>
+
+  <footer class="keyline">
+    <span><kbd>SPACE</kbd> 重新观测</span>
+    <span><kbd>ESC</kbd> 收起面板</span>
+    <span><kbd>DRAG</kbd> 平移</span>
+    <span><kbd>WHEEL</kbd> 缩放</span>
+  </footer>
+
+  <div class="curtain" id="curtain">
+    <div class="glyph">夜曲</div>
+    <div class="status" id="curtain-status">Standby</div>
+    <div class="bar"><i id="curtain-bar"></i></div>
+    <div class="detail" id="curtain-detail"></div>
+  </div>
+
+  <div class="notice" id="notice"></div>
+</body>
+</html>

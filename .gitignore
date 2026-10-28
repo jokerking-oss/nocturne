@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+*.png
+!docs/*.png
+
+# 模型权重体积大，随 release / Pages 产物分发，不进 git 历史
+public/models/

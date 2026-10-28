@@ -1,0 +1,41 @@
+{
+  "name": "nocturne",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "description": "NOCTURNE — 把文本坍缩成星图。浏览器内嵌入推理 + Barnes-Hut t-SNE，全部在本地完成。",
+  "keywords": [
+    "embeddings",
+    "tsne",
+    "transformers.js",
+    "generative-art",
+    "creative-coding",
+    "semantic-search",
+    "data-visualization",
+    "wasm"
+  ],
+  "author": "jokerking-oss",
+  "license": "MIT",
+  "main": "src/js/index.js",
+  "scripts": {
+    "start": "webpack serve --mode development --port 8080",
+    "build": "webpack --mode production",
+    "test": "node --test test/kernel.test.js test/wiring.test.js test/build.test.js",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@xenova/transformers": "^2.17.2",
+    "marked": "^12.0.2",
+    "pako": "^2.1.0",
+    "wasm-bhtsne": "^0.3.3"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.10.0",
+    "html-webpack-plugin": "^5.6.0",
+    "mini-css-extract-plugin": "^2.9.0",
+    "webpack": "^5.90.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.0"
+  }
+}
